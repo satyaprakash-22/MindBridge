@@ -1,0 +1,140 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String?  @unique
+  password  String?
+  username  String
+  role      String   @default("youth") // youth, mentor, admin
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Youth specific
+  youthProfile   YouthProfile?
+  moodLogs       MoodLog[]
+  chats          Chat[] @relation("ChatParticipant")
+  caseHistory    CaseHistory?
+  crisisFlags    CrisisFlag[] @relation("CreatedBy")
+
+  // Mentor specific
+  mentorProfile  MentorProfile?
+  assignedYouth  Assignment[] @relation("MentorToAssignment")
+  mentorChats    Chat[] @relation("MentorChats")
+
+  // Admin specific
+  adminActions   AdminAction[]
+}
+
+model YouthProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ageBracket        String
+  city              String
+  selectedIssues    String[] // Array of issue IDs
+  language          String
+  supportStyle      String
+  assignedMentor    Assignment?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model MentorProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio          String?
+  expertise    String[] // Areas of expertise
+  rating       Float    @default(0)
+  totalSessions Int    @default(0)
+  isAvailable  Boolean  @default(true)
+  credentials  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Assignment {
+  id           String   @id @default(cuid())
+  mentorId     String
+  mentor       User     @relation("MentorToAssignment", fields: [mentorId], references: [id], onDelete: Cascade)
+  youthId      String   @unique
+  youth        YouthProfile @relation(fields: [youthId], references: [id], onDelete: Cascade)
+  matchScore   Int
+  status       String   @default("active") // active, paused, completed
+  sessionCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model MoodLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mood      Int      // 1-5 scale
+  journal   String?
+  createdAt DateTime @default(now())
+}
+
+model Chat {
+  id           String   @id @default(cuid())
+  youthId      String
+  youth        User     @relation("ChatParticipant", fields: [youthId], references: [id], onDelete: Cascade)
+  mentorId     String?
+  mentor       User?    @relation("MentorChats", fields: [mentorId], references: [id], onDelete: SetNull)
+  messages     ChatMessage[]
+  sessionNotes String?
+  startedAt    DateTime @default(now())
+  endedAt      DateTime?
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender    String   // "youth", "mentor", "ai"
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model CrisisFlag {
+  id           String   @id @default(cuid())
+  youthId      String
+  reason       String   // e.g., "self-harm detected", "suicide keyword"
+  severity     String   @default("high") // low, medium, high, critical
+  status       String   @default("new") // new, reviewed, referred, resolved
+  flaggedBy    String?
+  createdByUser User?  @relation("CreatedBy", fields: [flaggedBy], references: [id], onDelete: SetNull)
+  helplineLink String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model CaseHistory {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionNotes  String[]
+  mentorHistory String[]
+  issues        String[]
+  progress      String?
+  updatedAt     DateTime @updatedAt
+}
+
+model AdminAction {
+  id        String   @id @default(cuid())
+  adminId   String
+  admin     User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  action    String
+  target    String?
+  createdAt DateTime @default(now())
+}
