@@ -59,7 +59,6 @@ cd backend
 
 # Install dependencies
 npm install
-
 # Setup database
 npx prisma generate
 npx prisma migrate dev
