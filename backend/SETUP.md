@@ -56,7 +56,9 @@ Edit `.env` file with:
 ```
 DATABASE_URL="postgresql://user:password@localhost:5432/mindbridge"
 JWT_SECRET="your-secret-key-change-this-in-production"
-CLAUDE_API_KEY="sk-ant-v4-your-key-here"  # Get from Anthropic
+GROQ_API_KEY="replace-with-your-groq-key"  # Get from Groq
+GROQ_MODEL="llama-3.1-8b-instant"
+GOOGLE_ALLOWED_DOMAINS="gmail.com"
 PORT=3001
 NODE_ENV="development"
 FRONTEND_URL="http://localhost:8080"
@@ -166,7 +168,7 @@ Triggers:
 - Helpline resources displayed
 
 ### 4. AI Chatbot
-- Claude API integration
+- Groq API integration
 - Responds when mentor unavailable
 - Case summary generation
 - Contextual responses based on user issues
@@ -225,7 +227,9 @@ npx prisma migrate dev --name migration_name
 NODE_ENV=production
 JWT_SECRET=<strong-random-key>
 DATABASE_URL=<production-db-url>
-CLAUDE_API_KEY=<api-key>
+GROQ_API_KEY=<groq-api-key>
+GROQ_MODEL=<groq-model>
+GOOGLE_ALLOWED_DOMAINS=<comma-separated-domains>
 ADMIN_KEY=<secure-key>
 FRONTEND_URL=<your-domain>
 ```

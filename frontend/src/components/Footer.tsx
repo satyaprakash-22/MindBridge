@@ -31,7 +31,7 @@ const Footer = () => {
             <h4 className="text-sm font-semibold text-foreground">Helplines</h4>
             <div className="flex flex-col gap-2">
               <a href="tel:9152987821" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive">
-                <Phone className="h-3 w-3" /> iCall: 9152987821
+                <Phone className="h-3 w-3" /> iCall (TISS): 9152987821
               </a>
               <a href="tel:18602662345" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive">
                 <Phone className="h-3 w-3" /> Vandrevala: 1860-2662-345
@@ -42,9 +42,12 @@ const Footer = () => {
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-foreground">Contact</h4>
             <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <p>Youngistaan Foundation</p>
-              <p>India</p>
-              <a href="mailto:support@mindbridge.org" className="hover:text-primary">support@mindbridge.org</a>
+              <p className="font-medium text-foreground">Volunteer / Internship</p>
+              <a href="tel:+919100142224" className="hover:text-primary">+91 9100142224</a>
+              <a href="mailto:admin@youngistaanfoundation.org" className="hover:text-primary">admin@youngistaanfoundation.org</a>
+              <p className="mt-2 font-medium text-foreground">Partnerships (Arun Daniel Yellamaty)</p>
+              <a href="tel:+919885342224" className="hover:text-primary">+91 9885342224</a>
+              <a href="mailto:arun@youngistaanfoundation.org" className="hover:text-primary">arun@youngistaanfoundation.org</a>
             </div>
           </div>
         </div>

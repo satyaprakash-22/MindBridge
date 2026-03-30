@@ -5,7 +5,7 @@ const path = require('path');
 const PDFDocument = require('pdfkit');
 const { PrismaClient } = require('@prisma/client');
 const { verifyToken } = require('../middleware/auth');
-const { generateCaseSummary } = require('../utils/claudeAPI');
+const { generateCaseSummary, isGroqConfigured } = require('../utils/claudeAPI');
 
 const prisma = new PrismaClient();
 
@@ -498,10 +498,7 @@ const toCsv = (rows) => rows
     .join(','))
   .join('\n');
 
-const isAiConfigured = () => (
-  process.env.CLAUDE_API_KEY
-  && process.env.CLAUDE_API_KEY !== 'sk-ant-v4-your-key-here'
-);
+const isAiConfigured = () => isGroqConfigured();
 
 // Get admin dashboard
 router.get('/dashboard', verifyToken, async (req, res) => {

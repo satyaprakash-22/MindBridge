@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const { OAuth2Client } = require('google-auth-library');
 const { verifyToken } = require('../middleware/auth');
+const { getAllowedGoogleDomains, isAllowedGoogleEmail } = require('../utils/domainRestriction');
 
 const prisma = new PrismaClient();
 const googleClient = process.env.GOOGLE_CLIENT_ID
@@ -227,6 +228,12 @@ router.post('/google-login', async (req, res) => {
       return res.status(401).json({ error: 'Unable to verify Google account email' });
     }
 
+    if (!isAllowedGoogleEmail(email)) {
+      return res.status(403).json({
+        error: `Google sign-in is restricted to: ${getAllowedGoogleDomains().join(', ')}`,
+      });
+    }
+
     let user = await prisma.user.findUnique({
       where: { email },
       include: { youthProfile: true }
@@ -329,6 +336,12 @@ router.post('/mentor-google-login', async (req, res) => {
 
     if (!email) {
       return res.status(401).json({ error: 'Unable to verify Google account email' });
+    }
+
+    if (!isAllowedGoogleEmail(email)) {
+      return res.status(403).json({
+        error: `Google sign-in is restricted to: ${getAllowedGoogleDomains().join(', ')}`,
+      });
     }
 
     let user = await prisma.user.findUnique({

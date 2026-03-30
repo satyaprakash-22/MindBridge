@@ -485,7 +485,7 @@ const MentorPortal = () => {
 
 ### Frontend Build
 ```bash
-cd the-foundry-forge-main
+cd frontend
 npm run build
 # Creates dist/ folder for deployment
 ```

@@ -1,50 +1,51 @@
-import { useEffect, useState } from "react";
-import { Heart, MapPin, Mail, Phone, Users, MessageCircle, Globe, Calendar } from "lucide-react";
+import { Heart, Mail, Phone, Users, MessageCircle, Globe, Calendar } from "lucide-react";
 
 const impactStats = [
-  { icon: Users, value: "2,500+", label: "Youth Supported" },
-  { icon: MessageCircle, value: "10,000+", label: "Sessions Conducted" },
-  { icon: Globe, value: "45+", label: "Cities Reached" },
-  { icon: Calendar, value: "150+", label: "Active Mentors" },
+  { icon: Users, value: "Millions", label: "Lives Supported" },
+  { icon: MessageCircle, value: "70,000+", label: "Young Volunteers Mobilised" },
+  { icon: Globe, value: "Multi-City", label: "Grassroots and Institutional Reach" },
+  { icon: Calendar, value: "10+ Years", label: "Community-Led Impact" },
 ];
 
-const teamMembers = [
-  { name: "Youngistaan Foundation", role: "Founding Organization", avatar: "🏛️" },
-  { name: "Peer Mentors", role: "Trained Volunteers", avatar: "🤝" },
-  { name: "Mental Health Advisors", role: "Clinical Oversight", avatar: "🧠" },
-  { name: "Youth Ambassadors", role: "Community Leaders", avatar: "💪" },
+const programAreas = [
+  {
+    title: "Educational Equity",
+    description:
+      "Early childhood education, foundational learning, academic support, mentoring, and life-skills programs that improve access to quality education for children and adolescents.",
+  },
+  {
+    title: "Health & Adolescent Well Being",
+    description:
+      "Health awareness initiatives including menstrual health and hygiene, puberty education, nutrition awareness, and preventive health interventions promoting dignity and well being.",
+  },
+  {
+    title: "Livelihoods & Hunger",
+    description:
+      "Food support initiatives, homeless rehabilitation, livelihood assistance, and skill-building and vocational programs aimed at improving economic resilience and dignity.",
+  },
+  {
+    title: "Senior Saathi",
+    description:
+      "A platform that promotes engagement, support systems, and dignity for senior citizens through community-led initiatives.",
+  },
+  {
+    title: "Community Well Being and Safety",
+    description:
+      "Disaster relief, road safety, responsible AI, animal support, WASH, climate action, and active citizenship initiatives including Youth Parliament and advocacy events.",
+  },
 ];
 
-type BlogPost = {
-  id: string;
-  title: string;
-  content: string;
-  author: string;
-  createdAt: string;
-};
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+const sdgGoals = [
+  "Zero Hunger",
+  "No Poverty",
+  "Gender Equality",
+  "Quality Education",
+  "Good Health",
+  "Responsible Consumption and Production",
+  "Partnership for the Goals",
+];
 
 const About = () => {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-
-  useEffect(() => {
-    const loadPosts = async () => {
-      try {
-        const response = await fetch(`${API_URL}/admin/public/blog-posts`);
-        if (!response.ok) {
-          return;
-        }
-
-        const result = await response.json();
-        setPosts(Array.isArray(result.posts) ? result.posts : []);
-      } catch (_) {
-        // Keep static About page even when blog endpoint is unavailable.
-      }
-    };
-
-    loadPosts();
-  }, []);
 
   return (
     <div className="flex flex-col">
@@ -55,33 +56,25 @@ const About = () => {
             About Youngistaan Foundation
           </h1>
           <p className="text-lg text-primary-foreground/80">
-            Empowering India's youth through mental health support, peer mentoring, and community action since day one.
+            Youth-led, community-centered, and impact-driven social action across India.
           </p>
         </div>
       </section>
 
-      {/* Mission */}
+      {/* Impact Narrative */}
       <section className="px-4 py-16">
-        <div className="container mx-auto max-w-3xl">
-          <h2 className="mb-4 text-2xl font-bold text-foreground">Our Mission</h2>
-          <p className="mb-4 leading-relaxed text-muted-foreground">
-            Youngistaan Foundation is a youth-led non-governmental organisation committed to building safe, accessible, and stigma-free mental health support systems for adolescents across India.
+        <div className="container mx-auto max-w-5xl">
+          <h2 className="mb-4 text-3xl font-bold text-foreground">Our Impact</h2>
+          <p className="mb-5 leading-relaxed text-muted-foreground">
+            Over the last decade, Youngistaan Foundation has grown into one of India&apos;s active grassroots youth-led social organizations, creating measurable impact through community engagement and partnerships. We have:
           </p>
-          <p className="mb-4 leading-relaxed text-muted-foreground">
-            MindBridge is our flagship digital initiative — a platform where every young person can find someone to talk to, without fear of judgement or loss of privacy. We believe that genuine human connection is the most powerful tool for healing, and technology should amplify that — never replace it.
-          </p>
-          <div className="mt-8 rounded-2xl border border-primary/20 bg-primary/5 p-6">
-            <p className="text-center text-sm font-medium italic text-primary">
-              "No young person should ever feel alone in what they're going through. We exist to make sure they don't have to."
-            </p>
-          </div>
-        </div>
-      </section>
+          <ul className="mb-8 list-disc space-y-2 pl-5 text-muted-foreground">
+            <li>Supported millions of lives across underserved communities through grassroots interventions.</li>
+            <li>Mobilised 70,000+ young volunteers across multiple cities.</li>
+            <li>Implemented programs in partnership with government departments, institutions, and corporate partners.</li>
+            <li>Strengthened access to education, health, livelihood opportunities, and community well being.</li>
+          </ul>
 
-      {/* Impact */}
-      <section className="bg-muted/30 px-4 py-16">
-        <div className="container mx-auto">
-          <h2 className="mb-8 text-center text-2xl font-bold text-foreground">Our Impact</h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {impactStats.map((s) => (
               <div key={s.label} className="rounded-2xl border border-border bg-card p-6 text-center">
@@ -96,71 +89,154 @@ const About = () => {
         </div>
       </section>
 
-      {/* Team */}
-      <section className="px-4 py-16">
-        <div className="container mx-auto">
-          <h2 className="mb-8 text-center text-2xl font-bold text-foreground">Our Team</h2>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {teamMembers.map((m) => (
-              <div key={m.name} className="rounded-2xl border border-border bg-card p-6 text-center transition-all hover:shadow-md">
-                <div className="mx-auto mb-3 text-4xl">{m.avatar}</div>
-                <h3 className="text-sm font-semibold text-foreground">{m.name}</h3>
-                <p className="text-xs text-muted-foreground">{m.role}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Blog */}
-      <section className="px-4 py-16">
-        <div className="container mx-auto max-w-4xl">
-          <h2 className="mb-8 text-center text-2xl font-bold text-foreground">Latest Updates</h2>
-          <div className="space-y-4">
-            {(posts.length === 0 ? [{
-              id: "empty",
-              title: "No updates published yet",
-              content: "Check back soon for new articles and NGO announcements.",
-              author: "MindBridge Admin",
-              createdAt: new Date().toISOString(),
-            }] : posts).map((post) => (
-              <article key={post.id} className="rounded-2xl border border-border bg-card p-6">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <h3 className="text-lg font-semibold text-foreground">{post.title}</h3>
-                  <span className="text-xs text-muted-foreground">{new Date(post.createdAt).toLocaleDateString()}</span>
-                </div>
-                <p className="text-sm leading-relaxed text-muted-foreground">{post.content}</p>
-                <p className="mt-3 text-xs font-medium text-primary">By {post.author}</p>
+      {/* Programs */}
+      <section className="bg-muted/30 px-4 py-16">
+        <div className="container mx-auto max-w-6xl">
+          <h2 className="mb-6 text-3xl font-bold text-foreground">Our Programs</h2>
+          <p className="mb-8 leading-relaxed text-muted-foreground">
+            Youngistaan Foundation works across interconnected thematic areas that address both immediate needs and structural challenges.
+          </p>
+          <div className="grid gap-5 md:grid-cols-2">
+            {programAreas.map((program) => (
+              <article key={program.title} className="rounded-2xl border border-border bg-card p-6">
+                <h3 className="mb-2 text-lg font-semibold text-foreground">{program.title}</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">{program.description}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
+      {/* Vision & Mission */}
+      <section className="px-4 py-16">
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h2 className="mb-3 text-2xl font-bold text-foreground">Vision</h2>
+              <p className="leading-relaxed text-muted-foreground">
+                To build a compassionate and just society where every individual, regardless of background, has the opportunity to thrive with dignity, access to opportunities, and community support.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h2 className="mb-3 text-2xl font-bold text-foreground">Mission</h2>
+              <p className="leading-relaxed text-muted-foreground">
+                To address key social challenges through collaborative action, community-led solutions, and youth engagement, enabling sustainable and inclusive development.
+              </p>
+              <p className="mt-3 leading-relaxed text-muted-foreground">
+                Youngistaan Foundation works to empower underserved communities while nurturing young people as responsible leaders who drive long-term social change.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+            <p className="text-sm leading-relaxed text-primary">
+              Read more about Youngistaan Foundation&apos;s programs by clicking here or on the image to the left: {" "}
+              <a
+                href="https://youngistaanfoundation.org"
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold underline underline-offset-4"
+              >
+                https://youngistaanfoundation.org
+              </a>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* SDGs */}
+      <section className="bg-muted/30 px-4 py-16">
+        <div className="container mx-auto max-w-6xl">
+          <h2 className="mb-4 text-3xl font-bold text-foreground">UN Sustainable Development Goals</h2>
+          <p className="mb-5 leading-relaxed text-muted-foreground">
+            Youngistaan Foundation projects are aligned with the following UN Sustainable Development Goals.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {sdgGoals.map((goal) => (
+              <span key={goal} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
+                {goal}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Approach */}
+      <section className="px-4 py-16">
+        <div className="container mx-auto max-w-6xl">
+          <h2 className="mb-4 text-3xl font-bold text-foreground">Our Approach: A Two-Way Model of Change</h2>
+          <p className="mb-8 leading-relaxed text-muted-foreground">
+            Youngistaan Foundation operates through an integrated model combining service-based interventions, community-led engagement, and youth participation. This enables both immediate support and long-term systemic change.
+          </p>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h3 className="mb-2 text-xl font-semibold text-foreground">Community-Centered Interventions</h3>
+              <p className="leading-relaxed text-muted-foreground">
+                We design and implement grassroots programs that respond to the needs of underserved communities, focusing on access to education, health, livelihood opportunities, dignity, and social inclusion.
+              </p>
+              <p className="mt-3 leading-relaxed text-muted-foreground">
+                Our interventions are developed in collaboration with communities and public systems to ensure sustainability and long-term impact.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h3 className="mb-2 text-xl font-semibold text-foreground">Youth Engagement and Leadership Development</h3>
+              <p className="leading-relaxed text-muted-foreground">
+                Young people remain central to our work. We engage youth as volunteers, leaders, and changemakers by providing platforms for participation, exposure, and skill development.
+              </p>
+              <p className="mt-3 leading-relaxed text-muted-foreground">
+                By encouraging civic responsibility and social awareness, we nurture a generation capable of driving meaningful social change.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-6 text-sm leading-relaxed text-primary">
+            This dual approach ensures that communities receive support while young people grow into responsible citizens who continue the cycle of impact.
+          </div>
+        </div>
+      </section>
+
       {/* Contact & Helplines */}
       <section className="bg-muted/30 px-4 py-16">
-        <div className="container mx-auto max-w-2xl">
-          <h2 className="mb-8 text-center text-2xl font-bold text-foreground">Get In Touch</h2>
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
-              <Mail className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-medium text-foreground">Email</p>
-                <a href="mailto:contact@youngistaan.org" className="text-sm text-muted-foreground hover:text-primary">contact@youngistaan.org</a>
+        <div className="container mx-auto max-w-5xl">
+          <h2 className="mb-8 text-center text-3xl font-bold text-foreground">Get In Touch</h2>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h3 className="mb-3 text-lg font-semibold text-foreground">For volunteer or internship opportunities with us</h3>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-primary" />
+                  <a href="tel:+919100142224" className="hover:text-primary">+91 9100142224</a>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-primary" />
+                  <a href="mailto:admin@youngistaanfoundation.org" className="hover:text-primary">admin@youngistaanfoundation.org</a>
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
-              <MapPin className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-medium text-foreground">Location</p>
-                <p className="text-sm text-muted-foreground">India</p>
+
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h3 className="mb-3 text-lg font-semibold text-foreground">For corporate, donations, campaign and other partnerships</h3>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">Arun Daniel Yellamaty</p>
+                <p>Founder and President</p>
+                <p className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-primary" />
+                  <a href="tel:+919885342224" className="hover:text-primary">+91 9885342224</a>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-primary" />
+                  <a href="mailto:arun@youngistaanfoundation.org" className="hover:text-primary">arun@youngistaanfoundation.org</a>
+                </p>
               </div>
             </div>
           </div>
 
           <div className="mt-8">
-            <h3 className="mb-4 text-center text-lg font-semibold text-foreground">
-              <Heart className="mr-1 inline h-4 w-4 text-destructive" /> Crisis Helplines
+            <h3 className="mb-4 text-center text-xl font-semibold text-foreground">
+              <Heart className="mr-1 inline h-5 w-5 text-destructive" /> Crisis Helplines
             </h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <a href="tel:9152987821" className="flex items-center gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 p-4 transition-colors hover:bg-destructive/10">

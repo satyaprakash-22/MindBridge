@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { moodAPI, youthAPI } from "@/services/api";
+import { chatAPI, moodAPI, youthAPI } from "@/services/api";
 import {
   Smile, Meh, Frown, Heart, CloudRain,
   MessageCircle, BookOpen, Users, ArrowRight, Sparkles
@@ -23,17 +23,22 @@ const YouthDashboard = () => {
   const [journal, setJournal] = useState("");
   const [moodSubmitted, setMoodSubmitted] = useState(false);
   const [username, setUsername] = useState("User");
+  const [userEmail, setUserEmail] = useState("");
   const [isLoggingMood, setIsLoggingMood] = useState(false);
   const [isFetchingMentors, setIsFetchingMentors] = useState(false);
+  const [isStartingAiBridge, setIsStartingAiBridge] = useState(false);
 
   useEffect(() => {
     const user = localStorage.getItem("mindbridge_user");
     if (user) {
       const parsed = JSON.parse(user);
       setUsername(parsed.username || "User");
+      setUserEmail(parsed.email || "");
     }
 
   }, []);
+
+  const isGoogleDomainEmail = userEmail.toLowerCase().endsWith("@gmail.com");
 
   const submitMood = async () => {
     if (!selectedMood || isLoggingMood) {
@@ -87,6 +92,26 @@ const YouthDashboard = () => {
       // Keep navigation smooth even if analytics tracking fails.
     } finally {
       navigate('/resources');
+    }
+  };
+
+  const startAiBridgeChat = async () => {
+    if (isStartingAiBridge) {
+      return;
+    }
+
+    setIsStartingAiBridge(true);
+    try {
+      const chat = await chatAPI.startChat();
+      navigate(`/chat/${chat.chat.id}`);
+    } catch (error) {
+      toast({
+        title: "Could not open AI Bridge",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsStartingAiBridge(false);
     }
   };
 
@@ -166,9 +191,13 @@ const YouthDashboard = () => {
             <Sparkles className="h-5 w-5 text-accent" />
           </div>
           <h3 className="mb-1 text-lg font-semibold text-foreground">AI Bridge</h3>
-          <p className="mb-4 text-sm text-muted-foreground">Mentor unavailable? I'm here to listen and help — clearly AI, never pretending.</p>
-          <Button variant="outline" className="rounded-full" size="sm">
-            Talk to AI <ArrowRight className="ml-1 h-3 w-3" />
+          <p className="mb-4 text-sm text-muted-foreground">
+            {isGoogleDomainEmail
+              ? "Mentor unavailable? Talk to AI Bridge powered by Groq for emotional support."
+              : "Talk to AI Bridge. If access is denied, sign in with an allowed Google account."}
+          </p>
+          <Button variant="outline" className="rounded-full" size="sm" onClick={startAiBridgeChat} disabled={isStartingAiBridge}>
+            {isStartingAiBridge ? "Opening AI Bridge..." : "Talk to AI"} <ArrowRight className="ml-1 h-3 w-3" />
           </Button>
         </div>
 

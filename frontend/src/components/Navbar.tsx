@@ -10,7 +10,6 @@ const Navbar = () => {
   const navLinks = [
     { to: "/", label: "Home" },
     { to: "/about", label: "About" },
-    { to: "/get-support", label: "Get Support" },
   ];
 
   return (
@@ -24,7 +23,7 @@ const Navbar = () => {
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden items-center gap-2 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.to}
@@ -38,9 +37,6 @@ const Navbar = () => {
               {link.label}
             </Link>
           ))}
-        </div>
-
-        <div className="hidden items-center gap-2 md:flex">
           <Link to="/mentor-login">
             <Button variant="ghost" size="sm" className="rounded-full text-muted-foreground">
               Volunteer Login
@@ -87,6 +83,11 @@ const Navbar = () => {
             <Link to="/admin-login" onClick={() => setIsOpen(false)}>
               <Button variant="ghost" size="sm" className="w-full justify-start">
                 Admin
+              </Button>
+            </Link>
+            <Link to="/get-support" onClick={() => setIsOpen(false)}>
+              <Button size="sm" className="w-full justify-start bg-gradient-hero text-primary-foreground hover:opacity-90">
+                Get Support
               </Button>
             </Link>
           </div>

@@ -3,18 +3,38 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const { verifyToken } = require('../middleware/auth');
 const { detectCrisis } = require('../utils/crisisDetection');
-const { getAIResponse, generateCaseSummary } = require('../utils/claudeAPI');
+const { getAIResponse, generateCaseSummary, isGroqConfigured } = require('../utils/claudeAPI');
+const { getAllowedGoogleDomains, isAllowedGoogleEmail } = require('../utils/domainRestriction');
 
 const prisma = new PrismaClient();
+const AI_BRIDGE_ACCESS_ERROR = 'AI Bridge is available only for Google users from allowed domains.';
+
+const canUseAiBridge = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, role: true },
+  });
+
+  return Boolean(user && user.role === 'youth' && isAllowedGoogleEmail(user.email));
+};
 
 // Start a new chat
 router.post('/start', verifyToken, async (req, res) => {
   try {
-    const { mentorId } = req.body;
+    const { mentorId } = req.body || {};
 
     const youthProfile = await prisma.youthProfile.findUnique({ where: { userId: req.userId } });
     if (!youthProfile) {
       return res.status(404).json({ error: 'Youth profile not found' });
+    }
+
+    if (!mentorId) {
+      const allowed = await canUseAiBridge(req.userId);
+      if (!allowed) {
+        return res.status(403).json({
+          error: `${AI_BRIDGE_ACCESS_ERROR} Allowed domains: ${getAllowedGoogleDomains().join(', ')}`,
+        });
+      }
     }
 
     // Continue existing chat for the same youth-mentor pair.
@@ -55,6 +75,28 @@ router.post('/message', verifyToken, async (req, res) => {
   try {
     const { chatId, content, sender } = req.body;
 
+    const chat = await prisma.chat.findUnique({
+      where: { id: chatId },
+      select: { id: true, youthId: true, mentorId: true },
+    });
+
+    if (!chat) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+
+    if (chat.youthId !== req.userId && chat.mentorId !== req.userId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    if (!chat.mentorId) {
+      const allowed = await canUseAiBridge(req.userId);
+      if (!allowed) {
+        return res.status(403).json({
+          error: `${AI_BRIDGE_ACCESS_ERROR} Allowed domains: ${getAllowedGoogleDomains().join(', ')}`,
+        });
+      }
+    }
+
     // Detect crisis keywords
     const crisisDetection = detectCrisis(content);
 
@@ -88,10 +130,6 @@ router.post('/message', verifyToken, async (req, res) => {
     }
 
     // If mentor not available, use AI response
-    const chat = await prisma.chat.findUnique({
-      where: { id: chatId }
-    });
-
     let aiResponse = null;
     if (!chat.mentorId) {
       // Get recent messages for context
@@ -101,7 +139,13 @@ router.post('/message', verifyToken, async (req, res) => {
         take: 5
       });
 
-      aiResponse = await getAIResponse(recentMessages.reverse());
+      const youthProfile = await prisma.youthProfile.findUnique({
+        where: { userId: chat.youthId },
+        select: { selectedIssues: true },
+      });
+      const context = (youthProfile?.selectedIssues || []).join(', ');
+
+      aiResponse = await getAIResponse(recentMessages.reverse(), context);
 
       // Save AI response
       await prisma.chatMessage.create({
@@ -197,7 +241,7 @@ router.post('/:chatId/end', verifyToken, async (req, res) => {
     });
 
     let summary = null;
-    if (process.env.CLAUDE_API_KEY && process.env.CLAUDE_API_KEY !== 'sk-ant-v4-your-key-here') {
+    if (isGroqConfigured()) {
       summary = await generateCaseSummary(chatHistory, youthProfile.selectedIssues);
     }
 

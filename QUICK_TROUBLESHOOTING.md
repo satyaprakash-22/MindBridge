@@ -192,7 +192,7 @@ docker-compose up -d
 docker-compose logs postgres  # Wait for "ready to accept connections"
 
 # Frontend
-cd the-foundry-forge-main
+cd frontend
 npm run dev   # Ctrl+C to stop
 # Try npm run dev again
 ```

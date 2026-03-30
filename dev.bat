@@ -2,6 +2,7 @@
 REM MindBridge Development Helper Script for Windows
 
 setlocal enabledelayedexpansion
+set "ROOT_DIR=%~dp0"
 
 REM Colors would require third-party tools, so we'll use simple text
 
@@ -15,15 +16,17 @@ if "%1"=="start" (
     
     echo.
     echo Starting backend...
-    cd backend
-    start cmd /k "npm run dev"
+    pushd "%ROOT_DIR%backend"
+    start "MindBridge Backend" cmd /k "npm run dev"
+    popd
     
     timeout /t 3 /nobreak
     
     echo.
     echo Starting frontend...
-    cd ..\the-foundry-forge-main
-    start cmd /k "npm run dev"
+    pushd "%ROOT_DIR%frontend"
+    start "MindBridge Frontend" cmd /k "npm run dev"
+    popd
     
     echo.
     echo Services started:
@@ -34,29 +37,33 @@ if "%1"=="start" (
 ) else if "%1"=="db-up" (
     echo.
     echo Starting database...
-    cd backend
+    pushd "%ROOT_DIR%backend"
     docker-compose up -d
+    popd
     echo Database started
     echo   pgAdmin: http://localhost:5050
     
 ) else if "%1"=="db-down" (
     echo.
     echo Stopping database...
-    cd backend
+    pushd "%ROOT_DIR%backend"
     docker-compose down
+    popd
     echo Database stopped
     
 ) else if "%1"=="studio" (
     echo.
     echo Opening Prisma Studio...
-    cd backend
+    pushd "%ROOT_DIR%backend"
     call npx prisma studio
+    popd
     
 ) else if "%1"=="migrate" (
     echo.
     echo Running database migration: %2
-    cd backend
+    pushd "%ROOT_DIR%backend"
     call npx prisma migrate dev --name %2
+    popd
     
 ) else if "%1"=="install" (
     echo.
@@ -64,13 +71,15 @@ if "%1"=="start" (
     
     echo.
     echo Backend:
-    cd backend
+    pushd "%ROOT_DIR%backend"
     call npm install
+    popd
     
     echo.
     echo Frontend:
-    cd ..\the-foundry-forge-main
+    pushd "%ROOT_DIR%frontend"
     call npm install
+    popd
     
     echo Dependencies installed
     
@@ -81,7 +90,7 @@ if "%1"=="start" (
     
     echo.
     echo Checking database...
-    docker-compose -f backend\docker-compose.yml ps
+    docker-compose -f "%ROOT_DIR%backend\docker-compose.yml" ps
     
 ) else if "%1"=="health" (
     echo.

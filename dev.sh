@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # MindBridge Development Helper Script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Colors for output
 RED='\033[0;31m'
@@ -49,13 +50,13 @@ case "$1" in
     
     # Start backend
     echo -e "\n${YELLOW}Starting backend...${NC}"
-    cd backend
+    cd "$SCRIPT_DIR/backend"
     npm run dev &
     BACKEND_PID=$!
     
     # Start frontend
     echo -e "\n${YELLOW}Starting frontend...${NC}"
-    cd ../the-foundry-forge-main
+    cd "$SCRIPT_DIR/frontend"
     npm run dev &
     FRONTEND_PID=$!
     
@@ -87,7 +88,7 @@ case "$1" in
     
   "db-up")
     echo -e "\n${YELLOW}Starting database...${NC}"
-    cd backend
+    cd "$SCRIPT_DIR/backend"
     docker-compose up -d
     echo -e "${GREEN}Database started${NC}"
     echo -e "  pgAdmin: http://localhost:5050"
@@ -95,27 +96,27 @@ case "$1" in
     
   "db-down")
     echo -e "\n${YELLOW}Stopping database...${NC}"
-    cd backend
+    cd "$SCRIPT_DIR/backend"
     docker-compose down
     echo -e "${GREEN}Database stopped${NC}"
     ;;
     
   "db-logs")
     echo -e "\n${YELLOW}Database logs...${NC}"
-    cd backend
+    cd "$SCRIPT_DIR/backend"
     docker-compose logs -f postgres
     ;;
     
   "migrate")
     echo -e "\n${YELLOW}Running database migration...${NC}"
-    cd backend
+    cd "$SCRIPT_DIR/backend"
     npx prisma migrate dev --name "$2"
     echo -e "${GREEN}Migration complete${NC}"
     ;;
     
   "studio")
     echo -e "\n${YELLOW}Opening Prisma Studio...${NC}"
-    cd backend
+    cd "$SCRIPT_DIR/backend"
     npx prisma studio
     ;;
     
@@ -124,7 +125,7 @@ case "$1" in
     read -p "Continue? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-      cd backend
+      cd "$SCRIPT_DIR/backend"
       npx prisma migrate reset
       echo -e "${GREEN}Database reset${NC}"
     fi
@@ -134,11 +135,11 @@ case "$1" in
     echo -e "\n${YELLOW}Installing dependencies...${NC}"
     
     echo -e "\n${YELLOW}Backend:${NC}"
-    cd backend
+    cd "$SCRIPT_DIR/backend"
     npm install
     
     echo -e "\n${YELLOW}Frontend:${NC}"
-    cd ../the-foundry-forge-main
+    cd "$SCRIPT_DIR/frontend"
     npm install
     
     echo -e "\n${GREEN}Dependencies installed${NC}"

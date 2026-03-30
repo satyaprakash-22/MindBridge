@@ -5,8 +5,8 @@ A comprehensive full-stack application connecting youth with mentors for mental 
 ## Project Structure
 
 ```
-lovable_code/
-├── the-foundry-forge-main/        # Frontend (React + Vite)
+MindBridge/
+├── frontend/                     # Frontend (React + Vite)
 │   ├── src/
 │   │   ├── components/           # React components
 │   │   ├── pages/               # Page components
@@ -71,7 +71,7 @@ npm run dev
 
 ### 3. Frontend Setup
 ```bash
-cd the-foundry-forge-main
+cd frontend
 
 # Install dependencies
 npm install
@@ -87,7 +87,9 @@ npm run dev
 ```
 DATABASE_URL="postgresql://postgres:mindbridge@localhost:5432/mindbridge"
 JWT_SECRET="your-secret-key"
-CLAUDE_API_KEY="sk-ant-v4-your-key-here"
+GROQ_API_KEY="replace-with-your-groq-key"
+GROQ_MODEL="llama-3.1-8b-instant"
+GOOGLE_ALLOWED_DOMAINS="gmail.com"
 ADMIN_KEY="admin-secret-key"
 PORT=3001
 NODE_ENV="development"
@@ -127,10 +129,11 @@ Monitors for keywords:
 - "overdose", "cutting", "poison"
 - Creates flags, alerts admins, shows helpline
 
-### AI Assistant (Claude)
+### AI Assistant (Groq)
 - Responds to messages when mentor unavailable
 - Generates case summaries for handover
 - Context-aware responses based on user issues
+- Domain-restricted to youth support topics
 
 ### Mood Tracking
 - Daily mood logging (1-5 scale)
@@ -255,7 +258,7 @@ npx prisma migrate dev --name feature_name
 ### Testing
 ```bash
 # Frontend
-cd the-foundry-forge-main
+cd frontend
 npm run test
 
 # Backend
@@ -281,7 +284,7 @@ npm test
 Update `.env` files with:
 - Strong JWT_SECRET (e.g., 32-char random string)
 - Production database URL (Supabase/AWS RDS)
-- Valid CLAUDE_API_KEY
+- Valid GROQ_API_KEY
 - Secure ADMIN_KEY
 - Production FRONTEND_URL
 
@@ -321,7 +324,7 @@ npx prisma db push
 
 ### Documentation
 - See [Backend SETUP.md](./backend/SETUP.md) for detailed backend guide
-- See [Frontend Components README](./the-foundry-forge-main/src/components/README.md) (if exists)
+- See [Frontend Components README](./frontend/src/components/README.md) (if exists)
 
 ### Emergency Resources
 - **India**: AASRA 9820466726
@@ -332,7 +335,7 @@ npx prisma db push
 - **Frontend**: React 18, TypeScript, Vite, Tailwind, shadcn/ui
 - **Backend**: Node.js, Express.js, Prisma, PostgreSQL
 - **Real-time**: Socket.IO
-- **AI**: Claude API (Anthropic)
+- **AI**: Groq API
 - **Auth**: JWT, bcrypt
 
 ## License
