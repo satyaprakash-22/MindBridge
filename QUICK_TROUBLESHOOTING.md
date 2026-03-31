@@ -10,7 +10,7 @@
 - [ ] npm run dev shows "running on port 3001"
 
 **Frontend:**
-- [ ] npm install completed
+- [ ] npm install completed      
 - [ ] .env has VITE_API_URL=http://localhost:3001/api
 - [ ] npm run dev shows "running on port 8080"
 
