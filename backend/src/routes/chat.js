@@ -1,12 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { verifyToken } = require('../middleware/auth');
 const { detectCrisis } = require('../utils/crisisDetection');
 const { getAIResponse, generateCaseSummary, isGroqConfigured } = require('../utils/claudeAPI');
 const { getAllowedGoogleDomains, isAllowedGoogleEmail } = require('../utils/domainRestriction');
-
-const prisma = new PrismaClient();
 const AI_BRIDGE_ACCESS_ERROR = 'AI Bridge is available only for Google users from allowed domains.';
 
 const canUseAiBridge = async (userId) => {

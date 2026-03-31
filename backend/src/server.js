@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const socketIO = require('socket.io');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('./lib/prisma');
 
 const app = express();
 const server = http.createServer(app);
@@ -19,8 +19,6 @@ const io = socketIO(server, {
     methods: ['GET', 'POST']
   }
 });
-
-const prisma = new PrismaClient();
 
 // Middleware
 app.use(cors({

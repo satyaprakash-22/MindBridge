@@ -1,10 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { verifyToken } = require('../middleware/auth');
 const { findBestMentor, rankMentors, calculateMatchScore, getIssueMatches } = require('../utils/mentorMatching');
-
-const prisma = new PrismaClient();
 
 const formatMentor = (item) => ({
   mentorId: item.mentor.userId,

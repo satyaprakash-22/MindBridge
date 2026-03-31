@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, History, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { chatAPI, youthAPI } from "@/services/api";
+import { cn } from "@/lib/utils";
 
 type MentorCard = {
   mentorId: string;
@@ -71,18 +72,34 @@ const FindMentor = () => {
     }
   };
 
-  const MentorList = ({ title, icon, mentors, emptyMessage }: { title: string; icon: React.ReactNode; mentors: MentorCard[]; emptyMessage: string }) => (
-    <div className="rounded-2xl border border-border bg-card p-5">
+  const MentorList = ({
+    title,
+    icon,
+    mentors,
+    emptyMessage,
+    isScrollable = false,
+    compact = false,
+    className,
+  }: {
+    title: string;
+    icon: React.ReactNode;
+    mentors: MentorCard[];
+    emptyMessage: string;
+    isScrollable?: boolean;
+    compact?: boolean;
+    className?: string;
+  }) => (
+    <div className={cn("rounded-2xl border border-border bg-card p-5", className)}>
       <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
         {icon} {title}
       </h2>
       {mentors.length === 0 ? (
         <p className="text-sm text-muted-foreground">{emptyMessage}</p>
       ) : (
-        <div className="space-y-3">
+        <div className={cn("space-y-3", isScrollable && "max-h-[60vh] overflow-y-auto pr-2")}> 
           {mentors.map((mentor) => (
             <div key={mentor.mentorId} className="rounded-xl border border-border p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className={cn("flex flex-col gap-3", !compact && "sm:flex-row sm:items-center sm:justify-between")}>
                 <div>
                   <p className="font-semibold text-foreground">{mentor.name}</p>
                   <p className="text-xs text-muted-foreground">{mentor.email}</p>
@@ -98,7 +115,10 @@ const FindMentor = () => {
                 <Button
                   onClick={() => startChat(mentor.mentorId)}
                   disabled={!mentor.isAvailable || isStarting === mentor.mentorId}
-                  className="rounded-full bg-gradient-hero text-primary-foreground hover:opacity-90"
+                  className={cn(
+                    "rounded-full bg-gradient-hero text-primary-foreground hover:opacity-90",
+                    compact && "w-full"
+                  )}
                 >
                   {isStarting === mentor.mentorId ? "Opening..." : mentor.hasHistory ? "Continue Chat" : "Select & Chat"}
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -123,12 +143,12 @@ const FindMentor = () => {
   );
 
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="container mx-auto max-w-6xl px-4 py-8">
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="outline" className="rounded-full" onClick={() => navigate("/dashboard")}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
-        <p className="text-sm text-muted-foreground">Choose a mentor and start or continue chat</p>
+        <p className="text-sm text-muted-foreground sm:text-right">Choose a mentor and start or continue chat</p>
       </div>
 
       <div className="mb-6">
@@ -141,27 +161,32 @@ const FindMentor = () => {
           <p className="text-sm text-muted-foreground">Loading mentors...</p>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:justify-center">
           <MentorList
             title="Previously Chatted Mentors"
             icon={<History className="h-5 w-5 text-primary" />}
             mentors={previousMentors}
             emptyMessage="No previous mentor chats yet."
+            isScrollable
+            compact
+            className="lg:sticky lg:top-20 lg:self-start"
           />
 
-          <MentorList
-            title="Best Matched Mentors"
-            icon={<Sparkles className="h-5 w-5 text-accent" />}
-            mentors={matchedMentors}
-            emptyMessage="No matched mentors available right now."
-          />
+          <div className="space-y-5 lg:mx-auto lg:w-full lg:max-w-3xl">
+            <MentorList
+              title="Best Matched Mentors"
+              icon={<Sparkles className="h-5 w-5 text-accent" />}
+              mentors={matchedMentors}
+              emptyMessage="No matched mentors available right now."
+            />
 
-          <MentorList
-            title="Other Volunteers"
-            icon={<Users className="h-5 w-5 text-warning" />}
-            mentors={otherVolunteers}
-            emptyMessage="No additional volunteers online right now."
-          />
+            <MentorList
+              title="Other Volunteers"
+              icon={<Users className="h-5 w-5 text-warning" />}
+              mentors={otherVolunteers}
+              emptyMessage="No additional volunteers online right now."
+            />
+          </div>
         </div>
       )}
     </div>

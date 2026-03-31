@@ -16,6 +16,8 @@ const moods = [
   { id: 5, icon: Heart, label: "Great", color: "text-primary" },
 ];
 
+const AI_BRIDGE_RESTRICTION_TEXT = "ai bridge is available only for google users from allowed domains";
+
 const YouthDashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -29,14 +31,26 @@ const YouthDashboard = () => {
   const [isStartingAiBridge, setIsStartingAiBridge] = useState(false);
 
   useEffect(() => {
-    const user = localStorage.getItem("mindbridge_user");
-    if (user) {
-      const parsed = JSON.parse(user);
-      setUsername(parsed.username || "User");
-      setUserEmail(parsed.email || "");
+    const rawUser = localStorage.getItem("mindbridge_user");
+    if (!rawUser) {
+      return;
     }
 
-  }, []);
+    try {
+      const parsed = JSON.parse(rawUser);
+      setUsername(parsed?.username || "User");
+      setUserEmail(parsed?.email || "");
+    } catch (_) {
+      localStorage.removeItem("mindbridge_user");
+      localStorage.removeItem("mindbridge_token");
+      toast({
+        title: "Session reset",
+        description: "Please continue again as guest or sign in.",
+      });
+      navigate("/get-support");
+    }
+
+  }, [navigate, toast]);
 
   const isGoogleDomainEmail = userEmail.toLowerCase().endsWith("@gmail.com");
 
@@ -105,9 +119,19 @@ const YouthDashboard = () => {
       const chat = await chatAPI.startChat();
       navigate(`/chat/${chat.chat.id}`);
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+
+      if (message.toLowerCase().includes(AI_BRIDGE_RESTRICTION_TEXT)) {
+        toast({
+          title: "AI Bridge access restricted",
+          description: "Sign in with an allowed Google account to use AI Bridge.",
+        });
+        return;
+      }
+
       toast({
         title: "Could not open AI Bridge",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description: message,
         variant: "destructive",
       });
     } finally {

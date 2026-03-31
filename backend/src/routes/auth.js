@@ -2,12 +2,10 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { OAuth2Client } = require('google-auth-library');
 const { verifyToken } = require('../middleware/auth');
 const { getAllowedGoogleDomains, isAllowedGoogleEmail } = require('../utils/domainRestriction');
-
-const prisma = new PrismaClient();
 const googleClient = process.env.GOOGLE_CLIENT_ID
   ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
   : null;
@@ -436,10 +434,12 @@ router.post('/mentor-google-login', async (req, res) => {
 router.post('/mentor-login', async (req, res) => {
   try {
     const { email, password, name, expertise } = req.body;
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const normalizedPassword = typeof password === 'string' ? password : '';
     const normalizedName = (name || '').trim();
     const normalizedExpertise = normalizeExpertise(expertise);
 
-    if (!email || !password) {
+    if (!normalizedEmail || !normalizedPassword) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
@@ -447,8 +447,13 @@ router.post('/mentor-login', async (req, res) => {
       return res.status(400).json({ error: 'Please select at least one expertise domain' });
     }
 
-    let user = await prisma.user.findUnique({
-      where: { email },
+    let user = await prisma.user.findFirst({
+      where: {
+        email: {
+          equals: normalizedEmail,
+          mode: 'insensitive',
+        },
+      },
       include: { mentorProfile: true }
     });
 
@@ -458,10 +463,10 @@ router.post('/mentor-login', async (req, res) => {
         return res.status(400).json({ error: 'Name is required for first-time volunteer login' });
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(normalizedPassword, 10);
       user = await prisma.user.create({
         data: {
-          email,
+          email: normalizedEmail,
           password: hashedPassword,
           username: normalizedName,
           role: 'mentor',
@@ -485,9 +490,22 @@ router.post('/mentor-login', async (req, res) => {
         return res.status(403).json({ error: 'Not a mentor account' });
       }
 
-      const isValidPassword = Boolean(user.password) && (await bcrypt.compare(password, user.password));
-      if (!isValidPassword) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+      if (!user.password) {
+        // Legacy volunteer accounts created through social login may not have a password yet.
+        const hashedPassword = await bcrypt.hash(normalizedPassword, 10);
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            password: hashedPassword,
+            ...(normalizedName ? { username: normalizedName } : {}),
+          },
+          include: { mentorProfile: true },
+        });
+      } else {
+        const isValidPassword = await bcrypt.compare(normalizedPassword, user.password);
+        if (!isValidPassword) {
+          return res.status(401).json({ error: 'Invalid credentials' });
+        }
       }
 
       if (user.mentorProfile) {

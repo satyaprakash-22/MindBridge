@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { authAPI } from "@/services/api";
-import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { Users, Mail, Lock, ArrowRight } from "lucide-react";
 
 const domainOptions = [
@@ -22,17 +21,17 @@ const domainOptions = [
   { id: "home_safety", label: "Home & Safety", emoji: "⚠️" },
 ];
 
+const PENDING_APPROVAL_TEXT = "awaiting admin approval";
+
 const MentorLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  const hasGoogleClientId = Boolean(googleClientId && googleClientId.trim().length > 0);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [googleToken, setGoogleToken] = useState("");
   const [expertise, setExpertise] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isFormComplete = Boolean(name.trim() && email.trim() && password.trim() && expertise.length > 0);
 
   const toggleExpertise = (id: string) => {
     setExpertise((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
@@ -41,52 +40,6 @@ const MentorLogin = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await authAPI.mentorLogin(email, password, name, expertise);
-      navigate("/mentor-portal");
-    } catch (error) {
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleGoogleSuccess = (response: CredentialResponse) => {
-    if (!response.credential) {
-      toast({
-        title: "Google sign-in failed",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setGoogleToken(response.credential);
-    toast({
-      title: "Google account connected",
-      description: "Now enter your volunteer name and expertise domains.",
-    });
-  };
-
-  const handleGoogleVolunteerContinue = async () => {
-    if (isSubmitting) {
-      return;
-    }
-
-    if (!googleToken) {
-      toast({
-        title: "Google sign-in required",
-        description: "Please continue with Google first.",
-        variant: "destructive",
-      });
       return;
     }
 
@@ -110,16 +63,22 @@ const MentorLogin = () => {
 
     setIsSubmitting(true);
     try {
-      await authAPI.mentorGoogleLogin({
-        idToken: googleToken,
-        name,
-        expertise,
-      });
+      await authAPI.mentorLogin(email, password, name, expertise);
       navigate("/mentor-portal");
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+
+      if (message.toLowerCase().includes(PENDING_APPROVAL_TEXT)) {
+        toast({
+          title: "Volunteer profile submitted",
+          description: "Your profile is pending admin approval. You can sign in after approval.",
+        });
+        return;
+      }
+
       toast({
-        title: "Google volunteer login failed",
-        description: error instanceof Error ? error.message : "Please try again.",
+        title: "Login failed",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -136,41 +95,11 @@ const MentorLogin = () => {
           </div>
           <h2 className="text-2xl font-bold text-foreground">Volunteer Login</h2>
           <p className="mt-1 text-sm text-muted-foreground">Welcome back, mentor.</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Your profile details are used to connect youth users with the right volunteer mentor.
+          </p>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
-          <div className="rounded-xl border border-border p-3">
-            <p className="text-sm font-medium text-foreground">Continue with Google (recommended)</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Your volunteer account will be linked to your Gmail address.
-            </p>
-            <div className="mt-3 flex justify-center">
-              {hasGoogleClientId ? (
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => {
-                    toast({
-                      title: "Google sign-in failed",
-                      description: "Check OAuth origin settings and try again.",
-                      variant: "destructive",
-                    });
-                  }}
-                />
-              ) : (
-                <Button type="button" variant="outline" disabled className="w-full rounded-full">
-                  Google OAuth not configured
-                </Button>
-              )}
-            </div>
-            {googleToken && (
-              <p className="mt-2 text-center text-xs font-medium text-primary">Google connected. Complete details below.</p>
-            )}
-            {!hasGoogleClientId && (
-              <p className="mt-2 text-center text-xs text-muted-foreground">
-                Add VITE_GOOGLE_CLIENT_ID in frontend env to enable this option.
-              </p>
-            )}
-          </div>
-
           <div>
             <label className="mb-1.5 block text-sm font-medium text-foreground">Volunteer Name</label>
             <Input
@@ -216,25 +145,13 @@ const MentorLogin = () => {
               ))}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">{expertise.length} selected</p>
+            {!isFormComplete && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Fill name, email, password, and at least one experience domain to enable login.
+              </p>
+            )}
           </div>
-          <Button
-            type="button"
-            onClick={handleGoogleVolunteerContinue}
-            disabled={isSubmitting || !googleToken}
-            className="w-full rounded-full bg-gradient-hero text-primary-foreground hover:opacity-90"
-            size="lg"
-          >
-            {isSubmitting && googleToken ? "Continuing..." : "Continue with Google as Volunteer"} <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-          <div className="relative py-1">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">or use email and password</span>
-            </div>
-          </div>
-          <Button type="submit" disabled={isSubmitting} className="w-full rounded-full bg-gradient-accent text-accent-foreground hover:opacity-90" size="lg">
+          <Button type="submit" disabled={isSubmitting || !isFormComplete} className="w-full rounded-full bg-gradient-accent text-accent-foreground hover:opacity-90" size="lg">
             {isSubmitting ? "Logging in..." : "Login"} <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </form>

@@ -1,9 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { verifyToken } = require('../middleware/auth');
-
-const prisma = new PrismaClient();
 
 // Get mentor dashboard
 router.get('/dashboard', verifyToken, async (req, res) => {

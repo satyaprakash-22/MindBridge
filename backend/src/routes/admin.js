@@ -3,11 +3,9 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const PDFDocument = require('pdfkit');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { verifyToken } = require('../middleware/auth');
 const { generateCaseSummary, isGroqConfigured } = require('../utils/claudeAPI');
-
-const prisma = new PrismaClient();
 
 const CASE_STATUSES = ['Active', 'Monitoring', 'Resolved', 'Escalated'];
 const BLOG_STORE_PATH = path.resolve(__dirname, '../../data/blog-posts.json');

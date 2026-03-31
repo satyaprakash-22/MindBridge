@@ -134,7 +134,7 @@ const About = () => {
               <a
                 href="https://youngistaanfoundation.org"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="font-semibold underline underline-offset-4"
               >
                 https://youngistaanfoundation.org

@@ -1,15 +1,60 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
+const parseStoredUser = () => {
+  const rawUser = localStorage.getItem('mindbridge_user');
+  if (!rawUser) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawUser);
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error('Invalid stored user shape');
+    }
+    return parsed;
+  } catch (_) {
+    localStorage.removeItem('mindbridge_user');
+    localStorage.removeItem('mindbridge_token');
+    return null;
+  }
+};
+
+const mapApiErrorMessage = (message: string, status: number) => {
+  const normalized = (message || '').toLowerCase();
+
+  if (normalized.includes('maxclientsinsessionmode') || normalized.includes('max clients reached')) {
+    return 'Server is busy right now. Please wait a moment and try again.';
+  }
+
+  if (status === 403 && normalized.includes('ai bridge is available only for google users from allowed domains')) {
+    return 'AI Bridge is limited to approved Google accounts. Sign in with an allowed account to continue.';
+  }
+
+  return message || `Request failed with status ${status}`;
+};
+
 // Get token from localStorage
 const getAuthToken = () => {
-  const user = localStorage.getItem('mindbridge_user');
-  return user ? JSON.parse(user).token : null;
+  const parsedUser = parseStoredUser();
+  const userToken = parsedUser && typeof parsedUser.token === 'string' ? parsedUser.token : null;
+
+  if (userToken) {
+    return userToken;
+  }
+
+  const fallbackToken = localStorage.getItem('mindbridge_token');
+  return fallbackToken && fallbackToken.trim().length > 0 ? fallbackToken : null;
 };
 
 // Set token in localStorage
 const setAuthToken = (token, user) => {
+  if (!token || typeof token !== 'string') {
+    throw new Error('Missing authentication token');
+  }
+
+  const safeUser = user && typeof user === 'object' ? user : {};
   localStorage.setItem('mindbridge_token', token);
-  localStorage.setItem('mindbridge_user', JSON.stringify({ ...user, token }));
+  localStorage.setItem('mindbridge_user', JSON.stringify({ ...safeUser, token }));
 };
 
 // API call helper
@@ -32,12 +77,41 @@ const apiCall = async (endpoint, options: RequestInit = {}) => {
     headers,
   });
 
+  const contentType = response.headers.get('content-type') || '';
+  const readPayload = async () => {
+    if (contentType.includes('application/json')) {
+      try {
+        return await response.json();
+      } catch (_) {
+        return null;
+      }
+    }
+
+    try {
+      const textPayload = await response.text();
+      return textPayload || null;
+    } catch (_) {
+      return null;
+    }
+  };
+
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'API call failed');
+    const errorPayload = await readPayload();
+    const rawMessage =
+      (typeof errorPayload === 'object' && errorPayload !== null
+        ? errorPayload.error || errorPayload.message
+        : typeof errorPayload === 'string'
+          ? errorPayload
+          : '') ||
+      'API call failed';
+    throw new Error(mapApiErrorMessage(rawMessage, response.status));
   }
 
-  return response.json();
+  if (response.status === 204) {
+    return null;
+  }
+
+  return readPayload();
 };
 
 // Auth APIs

@@ -23,6 +23,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { jsPDF } from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { adminAPI } from "@/services/api";
@@ -162,6 +163,11 @@ type BlogPost = {
 const caseStatusOptions = ["Active", "Monitoring", "Resolved", "Escalated"];
 
 const toDateKey = (date: Date) => date.toISOString().slice(0, 10);
+const toIsoDaysAgo = (daysAgo: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgo);
+  return date.toISOString();
+};
 
 const prettyDate = (dateKey: string) => {
   const [year, month, day] = dateKey.split("-");
@@ -200,26 +206,346 @@ const getMoodCellClass = (count: number, avgMood: number, hasMoodData?: boolean,
   return "bg-emerald-500/80";
 };
 
+const toCsvCell = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
+
+const STATIC_STATS: DashboardStats = {
+  totalYouth: 186,
+  totalVolunteers: 42,
+  pendingVolunteers: 7,
+  approvedVolunteers: 30,
+  activeChats: 18,
+  totalSessions: 523,
+  activeCrisisFlags: 3,
+};
+
+const STATIC_CRISIS_FLAGS: CrisisFlag[] = [
+  {
+    id: "cf-101",
+    reason: "Repeated self-harm keywords detected in late-night chat.",
+    status: "Open",
+    severity: "high",
+    createdAt: toIsoDaysAgo(0),
+  },
+  {
+    id: "cf-102",
+    reason: "Escalation requested by mentor after panic episode report.",
+    status: "Monitoring",
+    severity: "medium",
+    createdAt: toIsoDaysAgo(1),
+  },
+  {
+    id: "cf-103",
+    reason: "Youth reported unsafe home environment; hotline shared.",
+    status: "Open",
+    severity: "high",
+    createdAt: toIsoDaysAgo(2),
+  },
+];
+
+const STATIC_VOLUNTEERS: Volunteer[] = [
+  {
+    userId: "mentor-001",
+    approvalStatus: "approved",
+    user: { username: "Priya Rao", email: "priya.mentor@youngistaan.org" },
+    expertise: ["anxiety", "academic", "selfworth"],
+    isAvailable: true,
+    performance: {
+      totalSessions: 31,
+      completedSessions: 28,
+      avgMessagesPerSession: 16.2,
+    },
+    sessions: [
+      {
+        chatId: "ch-3001",
+        youthName: "Arjun K",
+        startedAt: toIsoDaysAgo(1),
+        endedAt: toIsoDaysAgo(1),
+        messageCount: 19,
+        sessionNotes: "Breathing routine agreed, follow-up in 3 days.",
+      },
+      {
+        chatId: "ch-3002",
+        youthName: "Maya R",
+        startedAt: toIsoDaysAgo(3),
+        endedAt: toIsoDaysAgo(3),
+        messageCount: 14,
+        sessionNotes: "Focused on exam stress and sleep hygiene.",
+      },
+    ],
+  },
+  {
+    userId: "mentor-002",
+    approvalStatus: "pending",
+    user: { username: "Rahul Dev", email: "rahul.volunteer@youngistaan.org" },
+    expertise: ["career", "loneliness"],
+    isAvailable: false,
+    performance: {
+      totalSessions: 0,
+      completedSessions: 0,
+      avgMessagesPerSession: 0,
+    },
+    sessions: [],
+  },
+  {
+    userId: "mentor-003",
+    approvalStatus: "approved",
+    user: { username: "Nisha Verma", email: "nisha.mentor@youngistaan.org" },
+    expertise: ["family", "grief", "anger"],
+    isAvailable: true,
+    performance: {
+      totalSessions: 24,
+      completedSessions: 23,
+      avgMessagesPerSession: 13.8,
+    },
+    sessions: [
+      {
+        chatId: "ch-3011",
+        youthName: "Sana F",
+        startedAt: toIsoDaysAgo(2),
+        endedAt: toIsoDaysAgo(2),
+        messageCount: 16,
+        sessionNotes: "Conflict mapping exercise and communication prompts shared.",
+      },
+    ],
+  },
+];
+
+const STATIC_CASES: YouthCase[] = [
+  {
+    youthUserId: "youth-1001",
+    username: "Arjun K",
+    selectedIssues: ["anxiety", "academic"],
+    language: "English",
+    supportStyle: "advice",
+    caseStatus: "Monitoring",
+    mentor: {
+      id: "mentor-001",
+      username: "Priya Rao",
+      email: "priya.mentor@youngistaan.org",
+    },
+    moodTrend: [
+      { mood: 2, createdAt: toIsoDaysAgo(5) },
+      { mood: 3, createdAt: toIsoDaysAgo(3) },
+      { mood: 3, createdAt: toIsoDaysAgo(1) },
+    ],
+  },
+  {
+    youthUserId: "youth-1002",
+    username: "Sana F",
+    selectedIssues: ["family", "anger"],
+    language: "Hindi",
+    supportStyle: "listen",
+    caseStatus: "Active",
+    mentor: {
+      id: "mentor-003",
+      username: "Nisha Verma",
+      email: "nisha.mentor@youngistaan.org",
+    },
+    moodTrend: [
+      { mood: 2, createdAt: toIsoDaysAgo(4) },
+      { mood: 2, createdAt: toIsoDaysAgo(2) },
+      { mood: 3, createdAt: toIsoDaysAgo(0) },
+    ],
+  },
+  {
+    youthUserId: "youth-1003",
+    username: "Maya R",
+    selectedIssues: ["selfworth", "loneliness"],
+    language: "English",
+    supportStyle: "advice",
+    caseStatus: "Resolved",
+    mentor: {
+      id: "mentor-001",
+      username: "Priya Rao",
+      email: "priya.mentor@youngistaan.org",
+    },
+    moodTrend: [
+      { mood: 3, createdAt: toIsoDaysAgo(6) },
+      { mood: 4, createdAt: toIsoDaysAgo(3) },
+      { mood: 4, createdAt: toIsoDaysAgo(1) },
+    ],
+  },
+];
+
+const STATIC_CASE_DETAILS: Record<string, CaseDetails> = {
+  "youth-1001": {
+    youth: {
+      id: "youth-1001",
+      username: "Arjun K",
+      email: "arjun.youth@example.com",
+      ageBracket: "16-18",
+      city: "Hyderabad",
+      selectedIssues: ["anxiety", "academic"],
+      language: "English",
+      supportStyle: "advice",
+      createdAt: toIsoDaysAgo(60),
+    },
+    caseStatus: "Monitoring",
+    assignment: {
+      id: "as-1001",
+      status: "active",
+      mentor: {
+        id: "mentor-001",
+        username: "Priya Rao",
+        email: "priya.mentor@youngistaan.org",
+      },
+    },
+    caseHistory: {
+      sessionNotes: [
+        "Youth reports exam pressure peaks at night.",
+        "Set study-break schedule and guided grounding prompts.",
+      ],
+      mentorHistory: ["Priya Rao"],
+      progress: "Stable with gradual improvement.",
+    },
+    moodTrend: [
+      { date: toIsoDaysAgo(5), mood: 2 },
+      { date: toIsoDaysAgo(3), mood: 3 },
+      { date: toIsoDaysAgo(1), mood: 3 },
+    ],
+    chats: [
+      {
+        id: "chat-a1",
+        startedAt: toIsoDaysAgo(3),
+        endedAt: toIsoDaysAgo(3),
+        sessionNotes: "Focused on exam stress and planning.",
+        mentor: { username: "Priya Rao", email: "priya.mentor@youngistaan.org" },
+        messages: [
+          { id: "m-a1", sender: "youth", content: "I panic before tests.", createdAt: toIsoDaysAgo(3) },
+          { id: "m-a2", sender: "mentor", content: "Let us break revision into 25-minute sprints.", createdAt: toIsoDaysAgo(3) },
+        ],
+      },
+    ],
+  },
+  "youth-1002": {
+    youth: {
+      id: "youth-1002",
+      username: "Sana F",
+      email: "sana.youth@example.com",
+      ageBracket: "14-16",
+      city: "Secunderabad",
+      selectedIssues: ["family", "anger"],
+      language: "Hindi",
+      supportStyle: "listen",
+      createdAt: toIsoDaysAgo(45),
+    },
+    caseStatus: "Active",
+    assignment: {
+      id: "as-1002",
+      status: "active",
+      mentor: {
+        id: "mentor-003",
+        username: "Nisha Verma",
+        email: "nisha.mentor@youngistaan.org",
+      },
+    },
+    caseHistory: {
+      sessionNotes: [
+        "Conflict at home triggers frustration after school.",
+        "Practiced pause-and-journal before reactions.",
+      ],
+      mentorHistory: ["Nisha Verma"],
+      progress: "Needs weekly check-ins.",
+    },
+    moodTrend: [
+      { date: toIsoDaysAgo(4), mood: 2 },
+      { date: toIsoDaysAgo(2), mood: 2 },
+      { date: toIsoDaysAgo(0), mood: 3 },
+    ],
+    chats: [
+      {
+        id: "chat-b1",
+        startedAt: toIsoDaysAgo(2),
+        endedAt: null,
+        sessionNotes: "Active support session.",
+        mentor: { username: "Nisha Verma", email: "nisha.mentor@youngistaan.org" },
+        messages: [
+          { id: "m-b1", sender: "youth", content: "I get angry very fast at home.", createdAt: toIsoDaysAgo(2) },
+          { id: "m-b2", sender: "mentor", content: "Let us set one calm-down anchor phrase for this week.", createdAt: toIsoDaysAgo(2) },
+        ],
+      },
+    ],
+  },
+  "youth-1003": {
+    youth: {
+      id: "youth-1003",
+      username: "Maya R",
+      email: "maya.youth@example.com",
+      ageBracket: "16-18",
+      city: "Hyderabad",
+      selectedIssues: ["selfworth", "loneliness"],
+      language: "English",
+      supportStyle: "advice",
+      createdAt: toIsoDaysAgo(72),
+    },
+    caseStatus: "Resolved",
+    assignment: {
+      id: "as-1003",
+      status: "completed",
+      mentor: {
+        id: "mentor-001",
+        username: "Priya Rao",
+        email: "priya.mentor@youngistaan.org",
+      },
+    },
+    caseHistory: {
+      sessionNotes: [
+        "Built social reconnection plan with weekly goals.",
+        "Confidence score improved over 4 sessions.",
+      ],
+      mentorHistory: ["Priya Rao"],
+      progress: "Closed after sustained positive mood trend.",
+    },
+    moodTrend: [
+      { date: toIsoDaysAgo(6), mood: 3 },
+      { date: toIsoDaysAgo(3), mood: 4 },
+      { date: toIsoDaysAgo(1), mood: 4 },
+    ],
+    chats: [
+      {
+        id: "chat-c1",
+        startedAt: toIsoDaysAgo(6),
+        endedAt: toIsoDaysAgo(6),
+        sessionNotes: "Completed support cycle.",
+        mentor: { username: "Priya Rao", email: "priya.mentor@youngistaan.org" },
+        messages: [
+          { id: "m-c1", sender: "youth", content: "I feel better than last month.", createdAt: toIsoDaysAgo(6) },
+          { id: "m-c2", sender: "mentor", content: "Great progress. Keep your weekly social goals.", createdAt: toIsoDaysAgo(6) },
+        ],
+      },
+    ],
+  },
+};
+
+const STATIC_BLOG_POSTS: BlogPost[] = [
+  {
+    id: "post-1001",
+    title: "Campus Wellbeing Drive Reached 1,200 Students",
+    content: "Volunteer circles conducted stress-management and peer-support sessions across five colleges.",
+    author: "MindBridge Admin",
+    createdAt: toIsoDaysAgo(2),
+  },
+  {
+    id: "post-1002",
+    title: "Volunteer Onboarding Week Complete",
+    content: "42 volunteers were trained on empathetic listening, crisis escalation, and privacy-first support.",
+    author: "MindBridge Admin",
+    createdAt: toIsoDaysAgo(6),
+  },
+];
+
 const AdminDashboard = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"overview" | "volunteers" | "cases" | "reports">("overview");
-  const [stats, setStats] = useState<DashboardStats>({
-    totalYouth: 0,
-    totalVolunteers: 0,
-    pendingVolunteers: 0,
-    approvedVolunteers: 0,
-    activeChats: 0,
-    totalSessions: 0,
-    activeCrisisFlags: 0,
-  });
-  const [crisisFlags, setCrisisFlags] = useState<CrisisFlag[]>([]);
+  const [stats, setStats] = useState<DashboardStats>(STATIC_STATS);
+  const [crisisFlags, setCrisisFlags] = useState<CrisisFlag[]>(STATIC_CRISIS_FLAGS);
   const [moodHeatmap, setMoodHeatmap] = useState<HeatmapDay[]>([]);
   const [activityByDay, setActivityByDay] = useState<ActivityDay[]>([]);
-  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
-  const [cases, setCases] = useState<YouthCase[]>([]);
-  const [selectedCaseUserId, setSelectedCaseUserId] = useState<string>("");
-  const [selectedCaseDetails, setSelectedCaseDetails] = useState<CaseDetails | null>(null);
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [volunteers, setVolunteers] = useState<Volunteer[]>(STATIC_VOLUNTEERS);
+  const [cases, setCases] = useState<YouthCase[]>(STATIC_CASES);
+  const [selectedCaseUserId, setSelectedCaseUserId] = useState<string>(STATIC_CASES[0]?.youthUserId || "");
+  const [selectedCaseDetails, setSelectedCaseDetails] = useState<CaseDetails | null>(STATIC_CASE_DETAILS[STATIC_CASES[0]?.youthUserId] || null);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(STATIC_BLOG_POSTS);
   const [newPostTitle, setNewPostTitle] = useState("");
   const [newPostContent, setNewPostContent] = useState("");
   const [newPostAuthor, setNewPostAuthor] = useState("");
@@ -249,8 +575,11 @@ const AdminDashboard = () => {
       { sessions: 9, messages: 58, newUsers: 3, newVolunteers: 1 },
     ];
 
-    let runningUsers = 120;
-    let runningVolunteers = 28;
+    const seedNewUsers = seed.reduce((sum, entry) => sum + entry.newUsers, 0);
+    const seedNewVolunteers = seed.reduce((sum, entry) => sum + entry.newVolunteers, 0);
+
+    let runningUsers = Math.max(0, stats.totalYouth - seedNewUsers);
+    let runningVolunteers = Math.max(0, stats.totalVolunteers - seedNewVolunteers);
 
     return seed.map((entry, idx) => {
       const offset = 13 - idx;
@@ -273,7 +602,7 @@ const AdminDashboard = () => {
         totalVolunteers: runningVolunteers,
       };
     });
-  }, []);
+  }, [stats.totalYouth, stats.totalVolunteers]);
 
   const activitySeries = useMemo(() => {
     const dataMap = new Map(activityByDay.map((entry) => [entry.date, entry]));
@@ -410,68 +739,84 @@ const AdminDashboard = () => {
     );
   }, [graphSeries]);
 
-  const loadAll = async () => {
-    setIsLoading(true);
+  const refreshVolunteerRequests = async () => {
     try {
-      const [dashboardRes, volunteersRes, casesRes, postsRes] = await Promise.all([
-        adminAPI.getDashboard(),
-        adminAPI.getVolunteers(),
-        adminAPI.getCases(),
-        adminAPI.getBlogPosts(),
-      ]);
-
-      setStats((prev) => ({ ...prev, ...(dashboardRes.stats || {}) }));
-      setCrisisFlags((prev) => (Array.isArray(dashboardRes.crisisFlags) ? dashboardRes.crisisFlags : prev));
-      setMoodHeatmap((prev) => (Array.isArray(dashboardRes.moodHeatmap) ? dashboardRes.moodHeatmap : prev));
-      setActivityByDay((prev) => (Array.isArray(dashboardRes.activityByDay) ? dashboardRes.activityByDay : prev));
-      setVolunteers((prev) => (Array.isArray(volunteersRes.volunteers) ? volunteersRes.volunteers : prev));
-      setCases((prev) => (Array.isArray(casesRes.cases) ? casesRes.cases : prev));
-      setBlogPosts((prev) => (Array.isArray(postsRes.posts) ? postsRes.posts : prev));
-
-      const availableCases = Array.isArray(casesRes.cases) ? casesRes.cases : [];
-      const nextSelectedCaseId = availableCases.some((item) => item.youthUserId === selectedCaseUserId)
-        ? selectedCaseUserId
-        : (availableCases[0]?.youthUserId || "");
-
-      if (nextSelectedCaseId && nextSelectedCaseId !== selectedCaseUserId) {
-        setSelectedCaseUserId(nextSelectedCaseId);
+      const volunteersRes = await adminAPI.getVolunteers();
+      if (!Array.isArray(volunteersRes?.volunteers)) {
+        return;
       }
 
-      if (nextSelectedCaseId) {
-        const details = await adminAPI.getCaseDetails(nextSelectedCaseId);
-        setSelectedCaseDetails(details);
-      }
-    } catch (error) {
-      toast({
-        title: "Unable to load admin dashboard",
-        description: error instanceof Error ? error.message : "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      const nextVolunteers = volunteersRes.volunteers;
+      const pendingVolunteers = nextVolunteers.filter((item) => item.approvalStatus === "pending").length;
+      const approvedVolunteers = nextVolunteers.filter((item) => item.approvalStatus === "approved").length;
+
+      setVolunteers(nextVolunteers);
+      setStats((prev) => ({
+        ...prev,
+        totalVolunteers: nextVolunteers.length,
+        pendingVolunteers,
+        approvedVolunteers,
+      }));
+    } catch (_) {
+      // Keep static fallback if admin API is temporarily unavailable.
     }
   };
 
-  const loadCaseDetails = async (youthUserId: string) => {
+  const loadAll = async () => {
+    setIsLoading(true);
+    setStats(STATIC_STATS);
+    setCrisisFlags(STATIC_CRISIS_FLAGS);
+    setMoodHeatmap([]);
+    setActivityByDay([]);
+    setVolunteers(STATIC_VOLUNTEERS);
+    setCases(STATIC_CASES);
+    setBlogPosts(STATIC_BLOG_POSTS);
+
+    const nextSelectedCaseId = STATIC_CASES.some((item) => item.youthUserId === selectedCaseUserId)
+      ? selectedCaseUserId
+      : (STATIC_CASES[0]?.youthUserId || "");
+
+    if (nextSelectedCaseId !== selectedCaseUserId) {
+      setSelectedCaseUserId(nextSelectedCaseId);
+    }
+
+    setSelectedCaseDetails(nextSelectedCaseId ? STATIC_CASE_DETAILS[nextSelectedCaseId] || null : null);
+
+    try {
+      const dashboardRes = await adminAPI.getDashboard();
+      if (dashboardRes?.stats) {
+        setStats((prev) => ({ ...prev, ...dashboardRes.stats }));
+      }
+      if (Array.isArray(dashboardRes?.crisisFlags) && dashboardRes.crisisFlags.length > 0) {
+        setCrisisFlags(dashboardRes.crisisFlags);
+      }
+    } catch (_) {
+      // Keep static fallback if admin API is unavailable.
+    }
+
+    await refreshVolunteerRequests();
+    setIsLoading(false);
+  };
+
+  const loadCaseDetails = (youthUserId: string) => {
     if (!youthUserId) {
       return;
     }
 
-    try {
-      const result = await adminAPI.getCaseDetails(youthUserId);
-      setSelectedCaseDetails(result);
-      setReassignMentorUserId("");
-    } catch (error) {
-      toast({
-        title: "Unable to load case details",
-        description: error instanceof Error ? error.message : "Please try again.",
-        variant: "destructive",
-      });
-    }
+    setSelectedCaseDetails(STATIC_CASE_DETAILS[youthUserId] || null);
+    setReassignMentorUserId("");
   };
 
   useEffect(() => {
-    loadAll();
+    void loadAll();
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void refreshVolunteerRequests();
+    }, 15000);
+
+    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -484,7 +829,7 @@ const AdminDashboard = () => {
     try {
       await adminAPI.updateVolunteerApproval(mentorUserId, status);
       toast({ title: `Volunteer ${status}` });
-      await loadAll();
+      await refreshVolunteerRequests();
     } catch (error) {
       toast({
         title: "Unable to update volunteer",
@@ -494,59 +839,115 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleCaseStatusUpdate = async (status: string) => {
+  const handleCaseStatusUpdate = (status: string) => {
     if (!selectedCaseUserId) {
       return;
     }
 
-    try {
-      await adminAPI.updateCaseStatus(selectedCaseUserId, status);
-      toast({ title: `Case moved to ${status}` });
-      await loadAll();
-      await loadCaseDetails(selectedCaseUserId);
-    } catch (error) {
-      toast({
-        title: "Unable to update case status",
-        description: error instanceof Error ? error.message : "Please try again.",
-        variant: "destructive",
-      });
-    }
+    setCases((prev) => prev.map((entry) => (
+      entry.youthUserId === selectedCaseUserId ? { ...entry, caseStatus: status } : entry
+    )));
+    setSelectedCaseDetails((prev) => (prev ? { ...prev, caseStatus: status } : prev));
+    toast({ title: `Case moved to ${status}` });
   };
 
-  const handleReassignMentor = async () => {
+  const handleReassignMentor = () => {
     if (!selectedCaseUserId || !reassignMentorUserId) {
       return;
     }
 
-    try {
-      const result = await adminAPI.reassignCaseMentor(selectedCaseUserId, reassignMentorUserId);
+    const selectedMentor = approvedMentors.find((mentor) => mentor.userId === reassignMentorUserId);
+    if (!selectedMentor) {
       toast({
-        title: "Mentor reassigned",
-        description: result.handoverSummary || "AI handover summary generated.",
-      });
-      await loadAll();
-      await loadCaseDetails(selectedCaseUserId);
-    } catch (error) {
-      toast({
-        title: "Unable to reassign mentor",
-        description: error instanceof Error ? error.message : "Please try again.",
+        title: "Select an approved mentor",
+        description: "Please choose a mentor from the approved list.",
         variant: "destructive",
       });
+      return;
     }
+
+    setCases((prev) => prev.map((entry) => (
+      entry.youthUserId === selectedCaseUserId
+        ? {
+            ...entry,
+            mentor: {
+              id: selectedMentor.userId,
+              username: selectedMentor.user.username,
+              email: selectedMentor.user.email,
+            },
+          }
+        : entry
+    )));
+
+    setSelectedCaseDetails((prev) => {
+      if (!prev) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        assignment: {
+          id: prev.assignment?.id || `as-${selectedCaseUserId}`,
+          status: "active",
+          mentor: {
+            id: selectedMentor.userId,
+            username: selectedMentor.user.username,
+            email: selectedMentor.user.email,
+          },
+        },
+      };
+    });
+
+    setReassignMentorUserId("");
+    toast({
+      title: "Mentor reassigned",
+      description: "Case ownership updated in static dashboard mode.",
+    });
   };
 
   const handleExport = async (format: "csv" | "pdf") => {
     try {
-      const blob = await adminAPI.exportReport(format);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `mindbridge-report.${format}`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      toast({ title: `${format.toUpperCase()} report downloaded` });
+      const rows: Array<[string, string | number]> = [
+        ["Metric", "Value"],
+        ["Generated At", new Date().toLocaleString()],
+        ["Total Youth", stats.totalYouth],
+        ["Volunteers", stats.totalVolunteers],
+        ["Pending Volunteers", stats.pendingVolunteers],
+        ["Approved Volunteers", stats.approvedVolunteers],
+        ["Active Chats", stats.activeChats],
+        ["Total Sessions", stats.totalSessions],
+        ["Crisis Flags", stats.activeCrisisFlags],
+      ];
+
+      if (format === "csv") {
+        const csvContent = `\uFEFF${rows.map((row) => row.map((cell) => toCsvCell(cell)).join(",")).join("\r\n")}`;
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "mindbridge-report.csv";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        toast({ title: "CSV report downloaded" });
+        return;
+      }
+
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      doc.setFontSize(18);
+      doc.text("MindBridge Static Report", 40, 48);
+      doc.setFontSize(11);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 40, 68);
+
+      let y = 98;
+      rows.slice(2).forEach(([label, value]) => {
+        doc.text(`${label}: ${value}`, 40, y);
+        y += 20;
+      });
+
+      doc.save("mindbridge-report.pdf");
+      toast({ title: "PDF report downloaded" });
     } catch (error) {
       toast({
         title: "Report export failed",
@@ -565,25 +966,19 @@ const AdminDashboard = () => {
       return;
     }
 
-    try {
-      await adminAPI.publishBlogPost({
-        title: newPostTitle,
-        content: newPostContent,
-        author: newPostAuthor,
-      });
-      setNewPostTitle("");
-      setNewPostContent("");
-      setNewPostAuthor("");
-      toast({ title: "Update published to About page blog" });
-      const postsRes = await adminAPI.getBlogPosts();
-      setBlogPosts(postsRes.posts || []);
-    } catch (error) {
-      toast({
-        title: "Unable to publish update",
-        description: error instanceof Error ? error.message : "Please try again.",
-        variant: "destructive",
-      });
-    }
+    const newPost: BlogPost = {
+      id: `post-${Date.now()}`,
+      title: newPostTitle.trim(),
+      content: newPostContent.trim(),
+      author: newPostAuthor.trim() || "MindBridge Admin",
+      createdAt: new Date().toISOString(),
+    };
+
+    setBlogPosts((prev) => [newPost, ...prev]);
+    setNewPostTitle("");
+    setNewPostContent("");
+    setNewPostAuthor("");
+    toast({ title: "Update added to static admin feed" });
   };
 
   const statCards = [
